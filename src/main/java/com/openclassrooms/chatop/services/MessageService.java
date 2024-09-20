@@ -9,10 +9,12 @@ import com.openclassrooms.chatop.exceptions.NotFoundException;
 import com.openclassrooms.chatop.repositories.MessageRepository;
 import com.openclassrooms.chatop.repositories.RentalRepository;
 import com.openclassrooms.chatop.repositories.UserRepository;
+import com.openclassrooms.chatop.mappers.MessageMapper;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.Optional;
+
 
 @Service
 public class MessageService implements MessageInterface {
@@ -29,7 +31,7 @@ public class MessageService implements MessageInterface {
 
     @Override
     public MessageResponse createMessage(MessageRequest messageRequest) throws NotFoundException {
-        Message message = new Message();
+        Message message = MessageMapper.INSTANCE.messageRequestToMessage(messageRequest); // Utilisation de MapStruct
 
         Optional<User> userInDB = userRepository.findById(messageRequest.getUser_id());
         if (userInDB.isPresent()) {
@@ -42,15 +44,14 @@ public class MessageService implements MessageInterface {
         if (rentalInDB.isPresent()) {
             message.setRental(rentalInDB.get());
         } else {
-            throw new NotFoundException("Location non référencé.");
+            throw new NotFoundException("Location non référencée.");
         }
-
-        message.setMessage(messageRequest.getMessage());
 
         message.setCreatedAt(LocalDate.now());
         message.setUpdatedAt(LocalDate.now());
 
         messageRepository.save(message);
-        return new MessageResponse(message.getId(), message.getRental().getId(), message.getUser().getId(), message.getMessage(), message.getCreatedAt(), message.getUpdatedAt());
+
+        return MessageMapper.INSTANCE.messageToMessageResponse(message); // Utilisation de MapStruct
     }
 }
