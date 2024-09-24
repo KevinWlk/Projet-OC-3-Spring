@@ -9,8 +9,9 @@ import com.openclassrooms.chatop.repositories.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.util.Optional;
+
+import com.openclassrooms.chatop.mappers.UserMapper;
 
 @Service
 public class UserService implements UserInterface {
@@ -28,7 +29,7 @@ public class UserService implements UserInterface {
         Optional<User> userInDB = userRepository.findById(id);
         if (userInDB.isPresent()) {
             User user = userInDB.get();
-            return new UserResponse(user.getId(), user.getName(), user.getEmail(), user.getCreatedAt(), user.getUpdatedAt());
+            return UserMapper.INSTANCE.userToUserResponse(user); // Utilisation du mapper
         } else {
             throw new NotFoundException("Utilisateur non référencé.");
         }
@@ -39,7 +40,7 @@ public class UserService implements UserInterface {
         Optional<User> userInDB = userRepository.findByEmail(email);
         if (userInDB.isPresent()) {
             User user = userInDB.get();
-            return new UserResponse(user.getId(), user.getName(), user.getEmail(), user.getCreatedAt(), user.getUpdatedAt());
+            return UserMapper.INSTANCE.userToUserResponse(user); // Utilisation du mapper
         } else {
             throw new NotFoundException("Utilisateur non référencé.");
         }
@@ -53,15 +54,11 @@ public class UserService implements UserInterface {
             throw new AlreadyExistException("Cet email a déjà été renseigné.");
         }
 
-        User user = new User();
-        user.setEmail(userRequest.getEmail());
-        user.setName(userRequest.getName());
-        user.setPassword(passwordEncoder.encode(userRequest.getPassword()));
-        user.setCreatedAt(LocalDate.now());
-        user.setUpdatedAt(LocalDate.now());
+        User user = UserMapper.INSTANCE.userRequestToUser(userRequest);
+        user.setPassword(passwordEncoder.encode(userRequest.getPassword())); // Encoder le mot de passe
 
         userRepository.save(user);
 
-        new UserResponse(user.getId(), user.getName(), user.getEmail(), user.getCreatedAt(), user.getUpdatedAt());
+        UserMapper.INSTANCE.userToUserResponse(user); // Retourne l'utilisateur enregistré sous forme de UserResponse
     }
 }
