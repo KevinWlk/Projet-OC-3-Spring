@@ -18,9 +18,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @RestController
-@Validated
 @RequestMapping("/api")
+@Tag(name = "Rental", description = "Gestion des locations")
 public class RentalController {
     private final RentalService rentalService;
 
@@ -28,12 +31,13 @@ public class RentalController {
         this.rentalService = rentalService;
     }
 
-    @ResponseStatus(value = HttpStatus.CREATED)
+    @Operation(summary = "Créer une nouvelle location", description = "Permet de créer une nouvelle annonce de location.")
     @PostMapping(value = "/rentals", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public RentalResponse createRental(@Valid @ModelAttribute RentalRequest rentalRequest) throws AlreadyExistException, NotFoundException, IOException, FormatNotSupportedException {
         return rentalService.createRental(rentalRequest);
     }
 
+    @Operation(summary = "Récupérer toutes les locations", description = "Retourne la liste de toutes les locations.")
     @GetMapping("/rentals")
     public Map<String, List<RentalResponse>> getRentals() {
         List<RentalResponse> rentalList = rentalService.getRentals();
@@ -42,11 +46,13 @@ public class RentalController {
         return response;
     }
 
+    @Operation(summary = "Récupérer une location par ID", description = "Permet de récupérer une location spécifique par son identifiant.")
     @GetMapping("/rentals/{id}")
     public RentalResponse getRental(@PathVariable @Min(value = 1, message = "L'identifiant doit être égal ou supérieur à un (1).") int id) throws NotFoundException {
         return rentalService.getRental(id);
     }
 
+    @Operation(summary = "Mettre à jour une location", description = "Permet de mettre à jour les informations d'une location existante.")
     @PutMapping(value = "/rentals/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public RentalResponse updateRental(@PathVariable @Min(value = 1, message = "L'identifiant doit être égal ou supérieur à un (1).") int id, @Valid @ModelAttribute RentalRequest rentalRequest) throws NotFoundException {
         return rentalService.updateRental(id, rentalRequest);
