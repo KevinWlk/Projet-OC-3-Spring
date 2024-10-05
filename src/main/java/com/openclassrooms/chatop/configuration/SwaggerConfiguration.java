@@ -10,14 +10,14 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @OpenAPIDefinition(
         info = @Info(title = "ChaTôp's Back-End", version = "v1"),
-        security = @SecurityRequirement(name = "bearerAuth")
+        security = @SecurityRequirement(name = "bearerAuth") // Définit l'utilisation de la sécurité avec JWT
 )
 @SecurityScheme(
         name = "bearerAuth",
         type = SecuritySchemeType.HTTP,
         scheme = "bearer",
-        bearerFormat = "JWT"
+        bearerFormat = "JWT" // Définition du schéma d'authentification JWT
 )
 public class SwaggerConfiguration {
-
+    // Classe de configuration Swagger pour la documentation de l'API
 }

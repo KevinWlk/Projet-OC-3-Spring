@@ -13,7 +13,6 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays;
 import java.util.List;
 
 @Configuration
@@ -22,33 +21,23 @@ public class SecurityConfiguration {
     private final AuthenticationProvider authenticationProvider;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    public SecurityConfiguration(
-            JwtAuthenticationFilter jwtAuthenticationFilter,
-            AuthenticationProvider authenticationProvider
-    ) {
+    public SecurityConfiguration(JwtAuthenticationFilter jwtAuthenticationFilter, AuthenticationProvider authenticationProvider) {
         this.authenticationProvider = authenticationProvider;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        // Prevent cross-site request forgery.
-        http.csrf(AbstractHttpConfigurer::disable)
-
+        // Configuration de la sécurité des requêtes HTTP
+        http.csrf(AbstractHttpConfigurer::disable) // Désactive la protection CSRF
                 .authorizeHttpRequests(authorize -> authorize
-                        // No auth needed on :
+                        // Routes publiques (pas besoin d'authentification)
                         .requestMatchers("/api/auth/**", "/swagger-ui/**", "/v3/api-docs/**", "/api/get/image/*").permitAll()
-                        // Auth needed on :
-                        .anyRequest().authenticated()
+                        .anyRequest().authenticated() // Toutes les autres routes nécessitent une authentification
                 )
-                // Sets session management to stateless : no session cookie.
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
-                // Sets the auth provider...
-                .authenticationProvider(authenticationProvider)
-                // ... to filter requests based on our JWT implementation.
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Gestion de session sans état (pas de session)
+                .authenticationProvider(authenticationProvider) // Définir le fournisseur d'authentification
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class); // Ajouter le filtre JWT avant les filtres d'authentification de Spring
 
         return http.build();
     }
@@ -56,16 +45,12 @@ public class SecurityConfiguration {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-
-        configuration.setAllowedOrigins(List.of("http://localhost:4200"));
-        configuration.setAllowedMethods(List.of("GET","POST","PUT"));
-        configuration.setAllowedHeaders(List.of("Authorization","Content-Type"));
+        configuration.setAllowedOrigins(List.of("http://localhost:4200")); // Autorise les requêtes depuis l'origine localhost:4200
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT")); // Méthodes HTTP autorisées
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type")); // En-têtes autorisés
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-
-        // The above is sets for all endpoints.
-        source.registerCorsConfiguration("/**",configuration);
-
+        source.registerCorsConfiguration("/**", configuration); // Applique la configuration CORS à toutes les routes
         return source;
     }
 }

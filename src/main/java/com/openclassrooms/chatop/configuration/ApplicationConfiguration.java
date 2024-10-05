@@ -11,42 +11,40 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
-@Configuration
+@Configuration // Indique à Spring que cette classe contient des configurations pour l'application
 public class ApplicationConfiguration {
     private final UserRepository userRepository;
 
+    // Le constructeur permet d'injecter une dépendance à UserRepository
     public ApplicationConfiguration(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 
-    // Get the user.
+    // Ce bean permet de récupérer les détails d'un utilisateur à partir de la base de données via son email
     @Bean
     UserDetailsService userDetailsService() {
         return username -> userRepository.findByEmail(username)
                 .orElseThrow(() -> new UsernameNotFoundException("Utilisateur non référencé."));
     }
 
-
-    // Encoding algorythm.
+    // Bean qui configure l'encodeur de mot de passe en utilisant BCrypt
     @Bean
     BCryptPasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // Create the authentication manager...
+    // Bean qui configure le gestionnaire d'authentification de Spring Security
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
-    // ...then sets the new strategy to perform the authentication.
+    // Bean qui configure la stratégie d'authentification à utiliser
     @Bean
     AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-
-        authProvider.setUserDetailsService(userDetailsService());
-        authProvider.setPasswordEncoder(passwordEncoder());
-
+        authProvider.setUserDetailsService(userDetailsService()); // Définit la source des détails utilisateur
+        authProvider.setPasswordEncoder(passwordEncoder()); // Définit l'encodeur de mot de passe
         return authProvider;
     }
 }
