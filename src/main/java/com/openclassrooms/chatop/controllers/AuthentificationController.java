@@ -10,6 +10,11 @@ import com.openclassrooms.chatop.exceptions.NotFoundException;
 import com.openclassrooms.chatop.services.AuthentificationService;
 import com.openclassrooms.chatop.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
@@ -30,25 +35,61 @@ public class AuthentificationController {
         this.userService = userService;
     }
 
-    @Operation(summary = "Enregistrer un nouvel utilisateur", description = "Permet d'enregistrer un utilisateur avec son email, son nom et son mot de passe.")
+    @Operation(summary = "Enregistrer un nouvel utilisateur",
+            description = "Permet d'enregistrer un utilisateur avec son email, son nom et son mot de passe.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Utilisateur enregistré avec succès", content = @Content(
+                            schema = @Schema(implementation = LoginResponse.class),
+                            examples = @ExampleObject(value = """
+                {
+                    "token": "eyJhbGciOiJIUzUxMiJ9..."
+                }
+                """))),
+                    @ApiResponse(responseCode = "400", description = "Requête incorrecte"),
+                    @ApiResponse(responseCode = "409", description = "Utilisateur déjà existant")
+            })
     @PostMapping("/auth/register")
     public LoginResponse register(@Valid @RequestBody UserRequest userRequest) throws AlreadyExistException, NotFoundException {
-        // Enregistre un nouvel utilisateur
         userService.createUser(userRequest);
         return authentificationService.authenticate(userRequest);
     }
 
-    @Operation(summary = "Authentifier un utilisateur", description = "Permet d'authentifier un utilisateur avec son email et son mot de passe.")
+    @Operation(summary = "Authentifier un utilisateur",
+            description = "Permet d'authentifier un utilisateur avec son email et son mot de passe.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Authentification réussie", content = @Content(
+                            schema = @Schema(implementation = LoginResponse.class),
+                            examples = @ExampleObject(value = """
+                {
+                    "token": "eyJhbGciOiJIUzUxMiJ9..."
+                }
+                """))),
+                    @ApiResponse(responseCode = "404", description = "Utilisateur non trouvé")
+            })
     @PostMapping("/auth/login")
     public LoginResponse authenticate(@Valid @RequestBody UserRequest userRequest) throws NotFoundException {
-        // Authentifie un utilisateur existant
         return authentificationService.authenticate(userRequest);
     }
 
-    @Operation(summary = "Récupérer les informations de l'utilisateur authentifié", description = "Retourne les informations de l'utilisateur actuellement connecté.")
+    @Operation(summary = "Récupérer les informations de l'utilisateur authentifié",
+            description = "Retourne les informations de l'utilisateur actuellement connecté.",
+            security = @SecurityRequirement(name = "bearerAuth"),
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Utilisateur récupéré avec succès", content = @Content(
+                            schema = @Schema(implementation = UserResponse.class),
+                            examples = @ExampleObject(value = """
+                {
+                    "id": 1,
+                    "name": "Antoine Dupont",
+                    "email": "antoine.dupont@example.com",
+                    "createdAt": "2024-01-01T10:00:00Z",
+                    "updatedAt": "2024-01-10T10:00:00Z"
+                }
+                """))),
+                    @ApiResponse(responseCode = "401", description = "Utilisateur non authentifié")
+            })
     @GetMapping("/auth/me")
     public UserResponse authenticatedUser() throws NoUserInContextException {
-        // Récupère les informations de l'utilisateur actuellement connecté
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         try {
             User user = (User) authentication.getPrincipal();
