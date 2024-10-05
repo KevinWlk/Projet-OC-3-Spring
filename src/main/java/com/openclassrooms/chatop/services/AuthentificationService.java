@@ -13,14 +13,12 @@ import java.util.Optional;
 
 @Service
 public class AuthentificationService implements AuthentificationInterface {
+    // Service qui gère l'authentification des utilisateurs
     private final UserRepository userRepository;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
 
-    public AuthentificationService(
-            UserRepository userRepository,
-            AuthenticationManager authenticationManager, JwtService jwtService
-    ) {
+    public AuthentificationService(UserRepository userRepository, AuthenticationManager authenticationManager, JwtService jwtService) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.jwtService = jwtService;
@@ -28,23 +26,13 @@ public class AuthentificationService implements AuthentificationInterface {
 
     @Override
     public LoginResponse authenticate(UserRequest userRequest) throws NotFoundException {
+        // Méthode pour authentifier un utilisateur et générer un jeton JWT
         Optional<User> userInDB = userRepository.findByEmail(userRequest.getEmail());
         if (userInDB.isPresent()) {
             User user = userInDB.get();
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            userRequest.getEmail(),
-                            userRequest.getPassword()
-                    )
-            );
-
+            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(userRequest.getEmail(), userRequest.getPassword()));
             String jwtToken = jwtService.generateToken(user);
-
-            LoginResponse loginResponse = new LoginResponse();
-            loginResponse.setToken(jwtToken);
-            loginResponse.setExpiresIn(jwtService.getExpirationTime());
-
-            return loginResponse;
+            return new LoginResponse(jwtToken, jwtService.getExpirationTime());
         } else {
             throw new NotFoundException("Utilisateur non référencé.");
         }

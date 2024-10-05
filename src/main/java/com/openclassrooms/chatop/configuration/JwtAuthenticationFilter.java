@@ -18,11 +18,9 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import java.io.IOException;
 
-@Component
-// OncePerRequestFilter -> run on every request.
+@Component // Indique à Spring qu'il doit gérer cette classe comme un composant
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final HandlerExceptionResolver handlerExceptionResolver;
-
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
 
@@ -32,51 +30,54 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         this.handlerExceptionResolver = handlerExceptionResolver;
     }
 
+    // Méthode principale du filtre qui est exécutée à chaque requête entrante
     @Override
     protected void doFilterInternal(
             @NonNull HttpServletRequest request,
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
+        // Récupère le jeton JWT de l'en-tête de la requête
         final String authHeader = request.getHeader("Authorization");
 
-        // Look for a bearer token
+        // Vérifie si le jeton existe et commence par "Bearer "
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            // Passes through our filter
+            // Si ce n'est pas le cas, la requête continue son chemin sans modification
             filterChain.doFilter(request, response);
             return;
         }
 
         try {
-            // Retrieves the JWT.
+            // Extrait le token sans le préfixe "Bearer "
             final String jwt = authHeader.substring(7);
-            // Retrieves the right username from the token.
+            // Extrait l'email de l'utilisateur à partir du token JWT
             final String userEmail = jwtService.extractUsername(jwt);
 
-            // Retrieves the current authentication.
+            // Vérifie si l'utilisateur n'est pas déjà authentifié
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-            // If username valid and not already authenticated :
             if (userEmail != null && authentication == null) {
-                // Gets user details.
+                // Charge les détails de l'utilisateur à partir de la base de données
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
 
+                // Vérifie si le token JWT est valide
                 if (jwtService.isTokenValid(jwt, userDetails)) {
-                    // Creates the authentication token with the user details.
+                    // Crée un token d'authentification pour l'utilisateur
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                            userDetails, // User details.
-                            null, // Credentials (not needed anymore).
-                            userDetails.getAuthorities() // User roles (no roles in this context).
+                            userDetails,
+                            null,
+                            userDetails.getAuthorities()
                     );
 
-                    // Adds other informations like the IP address or session ID (not used here in favour of JWT) to the token.
+                    // Ajoute des détails supplémentaires à l'authentification
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    // Sets the security context.
+
+                    // Définit l'utilisateur comme étant authentifié
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }
 
-            // Allow the request.
+            // Continue le traitement de la requête
             filterChain.doFilter(request, response);
         } catch (Exception exception) {
             handlerExceptionResolver.resolveException(request, response, null, exception);
