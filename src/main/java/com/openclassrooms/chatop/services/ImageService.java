@@ -20,41 +20,33 @@ public class ImageService implements ImageInterface{
     }
 
     @Override
-    public String uploadImage(MultipartFile file) throws IOException, FormatNotSupportedException {
-        // Gets the filename.
+    public long uploadImage(MultipartFile file) throws IOException, FormatNotSupportedException {
         String imageFileName = file.getOriginalFilename();
-
         assert imageFileName != null;
         String extension = imageFileName.substring(imageFileName.lastIndexOf(".") + 1);
 
-        // Accept the following extensions.
         if (!extension.equals("jpg") && !extension.equals("jpeg") && !extension.equals("png")) {
             throw new FormatNotSupportedException("Format invalide (acceptés :\".jpeg\", \".jpg\" ou \".png\").");
         }
 
-        Optional<Image> imageOptional = imageRepository.findByName(imageFileName);
-        // If unknown from DB :
-        if (imageOptional.isEmpty()) {
-            imageRepository.save(Image.builder()
-                    .name(imageFileName)
-                    .type(file.getContentType())
-                    .bytes(file.getBytes())
-                    .build());
-        }
+        Image image = Image.builder()
+                .name(imageFileName)
+                .type(file.getContentType())
+                .bytes(file.getBytes())
+                .build();
 
-        return imageFileName;
+        imageRepository.save(image);
+        return image.getId();  // Renvoie l'ID de l'image.
     }
 
-    @Override
-    public byte[] getImage(String name) throws FileNotFoundException {
-        Optional<Image> dbImage = imageRepository.findByName(name);
-        byte[] imageBytes;
 
+    public Image getImageById(Long id) throws FileNotFoundException {
+        Optional<Image> dbImage = imageRepository.findById(id);
         if (dbImage.isPresent()) {
-            imageBytes = dbImage.get().getBytes();
+            return dbImage.get();
         } else {
-            throw new FileNotFoundException("Image non référencé : " + name);
+            throw new FileNotFoundException("Image non référencée : " + id);
         }
-        return imageBytes;
     }
+
 }
