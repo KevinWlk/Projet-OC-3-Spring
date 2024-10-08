@@ -2,14 +2,13 @@ package com.openclassrooms.chatop.controllers;
 
 import com.openclassrooms.chatop.exceptions.FormatNotSupportedException;
 import com.openclassrooms.chatop.services.ImageService;
+import com.openclassrooms.chatop.models.Image;
+
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -46,22 +45,27 @@ public class ImageController {
                     @ApiResponse(responseCode = "400", description = "Erreur dans le format de l'image")
             })
     @PostMapping("/upload/image")
-    public String uploadImage(@RequestParam("image") MultipartFile file) throws IOException, FormatNotSupportedException {
+    public Long uploadImage(@RequestParam("image") MultipartFile file) throws IOException, FormatNotSupportedException {
         return imageService.uploadImage(file);
     }
 
     @Operation(summary = "Récupérer une image",
-            description = "Permet de récupérer une image par son nom.",
-            parameters = @Parameter(name = "name", description = "Nom de l'image à récupérer", required = true),
+            description = "Permet de récupérer une image par son ID.",
+            parameters = @Parameter(name = "id", description = "ID de l'image à récupérer", required = true),
             responses = {
                     @ApiResponse(responseCode = "200", description = "Image récupérée avec succès", content = @Content(
                             schema = @Schema(type = "string", format = "binary"))),
                     @ApiResponse(responseCode = "404", description = "Image non trouvée")
             })
-    @GetMapping(path = {"/get/image/{name}"})
-    public ResponseEntity<byte[]> getImage(@PathVariable("name") String name) throws FileNotFoundException, FormatNotSupportedException {
+    @GetMapping(path = {"/get/image/{id}"})
+    public ResponseEntity<byte[]> getImage(@PathVariable("id") Long id) throws FileNotFoundException, FormatNotSupportedException {
         HttpHeaders headers = new HttpHeaders();
-        String extension = name.substring(name.lastIndexOf(".") + 1);
+
+        // Récupérer l'image en utilisant l'ID
+        Image image = imageService.getImageById(id);
+
+        // Vérifier le type d'extension pour définir le type de contenu
+        String extension = image.getName().substring(image.getName().lastIndexOf(".") + 1);
         if (extension.equals("jpg") || extension.equals("jpeg")) {
             headers.setContentType(MediaType.IMAGE_JPEG);
         } else if (extension.equals("png")) {
@@ -69,8 +73,10 @@ public class ImageController {
         } else {
             throw new FormatNotSupportedException("Format invalide (doit être : \".jpeg\", \".jpg\" ou \".png\").");
         }
-        byte[] imageData = imageService.getImage(name);
-        return new ResponseEntity<>(imageData, headers, HttpStatus.OK);
+
+        // Retourner les octets de l'image
+        return new ResponseEntity<>(image.getBytes(), headers, HttpStatus.OK);
     }
+
 }
 

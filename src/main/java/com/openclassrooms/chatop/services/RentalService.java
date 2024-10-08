@@ -54,10 +54,11 @@ public class RentalService implements RentalInterface {
             throw new NotFoundException("Utilisateur non référencé.");
         }
 
-        // Gestion de l'image
-        String imageName = imageService.uploadImage(rentalRequest.getPicture());
-        String pictureURL = "http://localhost:3001/api/get/image/" + imageName;
+// Gestion de l'image avec chemin relatif
+        Long imageId = imageService.uploadImage(rentalRequest.getPicture());
+        String pictureURL = "/api/get/image/" + imageId;  // Chemin relatif basé sur l'ID
         rental.setPicture(pictureURL);
+
 
         rental.setCreatedAt(LocalDate.now());
         rental.setUpdatedAt(LocalDate.now());
