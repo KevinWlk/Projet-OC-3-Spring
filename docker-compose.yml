@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  database:
+    image: mysql:8.0
+    container_name: chatop-db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: chatop
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - chatop-network
+
+  chatop-app:
+    image: maven:3.8.7-eclipse-temurin-17
+    container_name: chatop-app
+    environment:
+      DB_URL: jdbc:mysql://database:3306/chatop
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+    ports:
+      - "3001:3001"
+    depends_on:
+      - database
+    networks:
+      - chatop-network
+    volumes:
+      - .:/usr/src/app
+    working_dir: /usr/src/app
+    command: mvn spring-boot:run
+
+volumes:
+  db_data:
+
+networks:
+  chatop-network:
+    driver: bridge
